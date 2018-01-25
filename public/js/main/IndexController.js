@@ -9,6 +9,15 @@ function openDatabase() {
     return Promise.resolve();
   }
 
+  return idb.open('wittr', 1, function(upgradeDb) {
+    switch(upgradeDb.oldVersion) {
+      case 0:
+        var wittrsStore = upgradeDb.createObjectStore('wittrs', {
+          keyPath: 'id'
+        });
+        wittrsStore.createIndex('by-date', 'time');
+    }
+  });
   // TODO: return a promise for a database called 'wittr'
   // that contains one objectStore: 'wittrs'
   // that uses 'id' as its key
@@ -133,6 +142,12 @@ IndexController.prototype._onSocketMessage = function(data) {
   this._dbPromise.then(function(db) {
     if (!db) return;
 
+    var tx = db.transaction('wittrs', 'readwrite');
+    var wittrsStore = tx.objectStore('wittrs');
+
+    messages.forEach(function(message) {
+      wittrsStore.put(message);
+    });
     // TODO: put each message into the 'wittrs'
     // object store.
   });
